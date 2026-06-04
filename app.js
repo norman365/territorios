@@ -1,4 +1,4 @@
-const SUPABASE_URL = "https://mrzupearuxoadparxglm.supabase.co/rest/v1/";
+const SUPABASE_URL = "https://mrzupearuxoadparxglm.supabase.co";
 const SUPABASE_KEY = "sb_publishable_gkLrS2xsIfaG5bigc50ltg_rM1LV2ei";
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
