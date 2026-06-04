@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta charset="UTF-8">
   <title>Registro de Territorios</title>
   <link rel="stylesheet" href="styles.css">
@@ -9,7 +10,12 @@
 
 <h1>Registro de Territorios</h1>
 
-<section class="card">
+<nav class="tabs">
+  <button onclick="mostrarVista('carga')">Cargar</button>
+  <button onclick="mostrarVista('reporte')">Reporte</button>
+</nav>
+
+<section id="vistaCarga" class="card">
   <h2>Cargar territorio</h2>
 
   <label>Territorio</label>
@@ -27,7 +33,7 @@
   <button onclick="guardar()">Guardar</button>
 </section>
 
-<section class="card">
+<section id="vistaReporte" class="card oculto">
   <h2>Reporte</h2>
   <div id="reporte" class="grid"></div>
 </section>
