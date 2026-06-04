@@ -1,68 +1,111 @@
 body {
   font-family: Arial, sans-serif;
   background: #f4f6f8;
-  padding: 20px;
+  margin: 0;
+  padding: 16px;
+}
+
+h1 {
+  font-size: 26px;
 }
 
 .card {
   background: white;
   padding: 20px;
-  margin-bottom: 25px;
-  border-radius: 10px;
-}
-
-label {
-  display: block;
-  margin-top: 10px;
+  margin-bottom: 24px;
+  border-radius: 12px;
 }
 
 input, textarea, button {
   width: 100%;
-  padding: 10px;
-  margin-top: 5px;
+  padding: 13px;
+  margin-top: 6px;
   box-sizing: border-box;
+  font-size: 16px;
+}
+
+label {
+  display: block;
+  margin-top: 12px;
 }
 
 button {
-  margin-top: 15px;
+  margin-top: 18px;
+  border: 0;
+  border-radius: 8px;
+  background: #222;
+  color: white;
   cursor: pointer;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
   gap: 10px;
 }
 
 .territorio {
-  padding: 12px;
-  border-radius: 8px;
+  padding: 12px 6px;
+  border-radius: 9px;
   color: white;
   font-weight: bold;
   text-align: center;
+  min-height: 46px;
 }
 
-.asignado {
-  background: #007bff;
+.asignado { background: #007bff; }
+.nunca { background: #777; }
+.verde { background: #28a745; }
+.amarillo { background: #ffc107; color: #222; }
+.naranja { background: #fd7e14; }
+.rojo { background: #dc3545; }
+
+/* Toast */
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: #222;
+  color: white;
+  padding: 14px 20px;
+  border-radius: 10px;
+  display: none;
+  z-index: 9999;
+  max-width: 90%;
+  text-align: center;
 }
 
-.nunca {
-  background: #777;
+#toast.show {
+  display: block;
 }
 
-.verde {
+#toast.success {
   background: #28a745;
 }
 
-.amarillo {
-  background: #ffc107;
-  color: #222;
-}
-
-.naranja {
-  background: #fd7e14;
-}
-
-.rojo {
+#toast.error {
   background: #dc3545;
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 10px;
+  }
+
+  h1 {
+    font-size: 23px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .territorio {
+    font-size: 14px;
+  }
 }
