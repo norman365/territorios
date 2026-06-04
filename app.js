@@ -10,7 +10,7 @@ async function guardar() {
   const observaciones = document.getElementById("observaciones").value;
 
   if (!numero || !fechaInicio) {
-    alert("Completá territorio y fecha de inicio.");
+    mostrarToast("Completá territorio y fecha de inicio.", "error");
     return;
   }
 
@@ -24,11 +24,11 @@ async function guardar() {
     });
 
   if (error) {
-    alert("Error al guardar: " + error.message);
+    mostrarToast("Error al guardar: " + error.message, "error");
     return;
   }
 
-  alert("Registro guardado correctamente.");
+  mostrarToast("Registro guardado correctamente.", "success");
 
   document.getElementById("territorio").value = "";
   document.getElementById("fechaInicio").value = "";
@@ -45,7 +45,7 @@ async function cargarReporte() {
     .order("numero_territorio");
 
   if (error) {
-    alert("Error al cargar reporte: " + error.message);
+    mostrarToast("Error al cargar reporte: " + error.message, "error");
     return;
   }
 
@@ -81,6 +81,18 @@ async function cargarReporte() {
 
     contenedor.appendChild(div);
   });
+}
+
+function mostrarToast(mensaje, tipo = "success") {
+  const toast = document.getElementById("toast");
+
+  toast.textContent = mensaje;
+  toast.className = "";
+  toast.classList.add("show", tipo);
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 3000);
 }
 
 cargarReporte();
