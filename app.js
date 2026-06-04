@@ -95,4 +95,18 @@ function mostrarToast(mensaje, tipo = "success") {
   }, 3000);
 }
 
+function mostrarVista(vista) {
+  document.getElementById("vistaCarga").classList.add("oculto");
+  document.getElementById("vistaReporte").classList.add("oculto");
+
+  if (vista === "carga") {
+    document.getElementById("vistaCarga").classList.remove("oculto");
+  }
+
+  if (vista === "reporte") {
+    document.getElementById("vistaReporte").classList.remove("oculto");
+    cargarReporte();
+  }
+}
+
 cargarReporte();
