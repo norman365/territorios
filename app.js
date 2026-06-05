@@ -87,6 +87,10 @@ async function cargarReporte() {
     div.classList.add(clase);
     div.innerHTML = texto;
 
+    div.onclick = () => {
+      abrirDetalleTerritorio(t.numero_territorio);
+    };
+
     contenedor.appendChild(div);
   });
 }
@@ -180,6 +184,98 @@ async function finalizarTerritorio() {
 
   cerrarPanelFinalizar();
   cargarReporte();
+}
+
+async function abrirDetalleTerritorio(numeroTerritorio) {
+  document.getElementById("reporte").style.display = "none";
+  document.getElementById("panelFinalizar").classList.add("oculto");
+  document.getElementById("panelDetalle").classList.remove("oculto");
+
+  document.getElementById("tituloDetalle").textContent =
+    "Detalle Territorio " + numeroTerritorio;
+
+  const { data, error } = await db
+    .from("territorios_registro")
+    .select("*")
+    .eq("numero_territorio", numeroTerritorio)
+    .order("fecha_inicio", { ascending: false });
+
+  if (error) {
+    mostrarToast("Error al cargar detalle: " + error.message, "error");
+    return;
+  }
+
+  let html = `
+    <div class="tabla-scroll">
+      <table class="tabla-detalle">
+        <thead>
+          <tr>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Día fin</th>
+            <th>Obs.</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  if (data.length === 0) {
+    html += `
+      <tr>
+        <td colspan="4">Sin registros</td>
+      </tr>
+    `;
+  }
+
+  data.forEach(r => {
+    const diaFin = r.fecha_fin ? obtenerDiaSemana(r.fecha_fin) : "Asignado";
+
+    html += `
+      <tr>
+        <td>${formatearFecha(r.fecha_inicio)}</td>
+        <td>${r.fecha_fin ? formatearFecha(r.fecha_fin) : "-"}</td>
+        <td>${diaFin}</td>
+        <td>${r.observaciones || ""}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  document.getElementById("detalleTerritorio").innerHTML = html;
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function cerrarDetalleTerritorio() {
+  document.getElementById("panelDetalle").classList.add("oculto");
+  document.getElementById("reporte").style.display = "grid";
+}
+
+function obtenerDiaSemana(fecha) {
+  const partes = fecha.split("-");
+  const date = new Date(partes[0], partes[1] - 1, partes[2]);
+
+  const dias = [
+    "Domingo",
+    "Lunes",
+    "Martes",
+    "Miércoles",
+    "Jueves",
+    "Viernes",
+    "Sábado"
+  ];
+
+  return dias[date.getDay()];
+}
+
+function formatearFecha(fecha) {
+  const partes = fecha.split("-");
+  return `${partes[2]}/${partes[1]}/${partes[0]}`;
 }
 
 cargarComboTerritorios() 
