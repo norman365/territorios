@@ -157,3 +157,13 @@ button {
     padding: 14px 6px;
   }
 }
+.panel-finalizar {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 10px;
+  background: #f4f6f8;
+}
+
+.btn-secundario {
+  background: #777;
+}
