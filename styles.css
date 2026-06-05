@@ -167,3 +167,25 @@ button {
 .btn-secundario {
   background: #777;
 }
+
+.tabla-scroll {
+  overflow-x: auto;
+}
+
+.tabla-detalle {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.tabla-detalle th,
+.tabla-detalle td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.tabla-detalle th {
+  background: #222;
+  color: white;
+}
