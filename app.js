@@ -59,9 +59,18 @@ async function cargarReporte() {
     let clase = "";
     let texto = `T${t.numero_territorio}`;
 
-    if (t.estado === "ASIGNADO") {
+   if (t.estado === "ASIGNADO") {
       clase = "asignado";
       texto += "<br>Asignado";
+    
+      div.onclick = () => {
+        abrirPanelFinalizar(
+          t.id_registro_asignado,
+          t.numero_territorio,
+          t.fecha_asignacion
+        );
+      };
+    }
     } else if (t.estado === "NUNCA_HECHO") {
       clase = "nunca";
       texto += "<br>Nunca";
@@ -118,6 +127,47 @@ function cargarComboTerritorios() {
     option.textContent = "Territorio " + i;
     select.appendChild(option);
   }
+}
+
+function abrirPanelFinalizar(idRegistro, numeroTerritorio, fechaAsignacion) {
+  document.getElementById("idRegistroAsignado").value = idRegistro;
+  document.getElementById("territorioFinalizar").value = "Territorio " + numeroTerritorio;
+  document.getElementById("fechaFinFinalizar").value = "";
+
+  document.getElementById("panelFinalizar").classList.remove("oculto");
+
+  mostrarToast("Indicá la fecha fin real del territorio.", "success");
+}
+
+function cerrarPanelFinalizar() {
+  document.getElementById("panelFinalizar").classList.add("oculto");
+}
+
+async function finalizarTerritorio() {
+  const idRegistro = document.getElementById("idRegistroAsignado").value;
+  const fechaFin = document.getElementById("fechaFinFinalizar").value;
+
+  if (!fechaFin) {
+    mostrarToast("Completá la fecha fin.", "error");
+    return;
+  }
+
+  const { error } = await db
+    .from("territorios_registro")
+    .update({
+      fecha_fin: fechaFin
+    })
+    .eq("id", idRegistro);
+
+  if (error) {
+    mostrarToast("Error al finalizar: " + error.message, "error");
+    return;
+  }
+
+  mostrarToast("Territorio finalizado correctamente.", "success");
+
+  cerrarPanelFinalizar();
+  cargarReporte();
 }
 
 cargarComboTerritorios() 
