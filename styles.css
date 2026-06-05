@@ -16,7 +16,7 @@ h1 {
   border-radius: 12px;
 }
 
-input, textarea, button {
+input, textarea, button, select {
   width: 100%;
   padding: 13px;
   margin-top: 6px;
@@ -141,7 +141,7 @@ button {
     font-size: 21px;
   }
 
-  input, textarea, button {
+  input, textarea, button, select {
     font-size: 17px;
     padding: 14px;
   }
