@@ -70,7 +70,6 @@ async function cargarReporte() {
           t.fecha_asignacion
         );
       };
-    }
     } else if (t.estado === "NUNCA_HECHO") {
       clase = "nunca";
       texto += "<br>Nunca";
