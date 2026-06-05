@@ -128,18 +128,31 @@ function cargarComboTerritorios() {
   }
 }
 
-function abrirPanelFinalizar(idRegistro, numeroTerritorio, fechaAsignacion) {
+function abrirPanelFinalizar(idRegistro, numeroTerritorio) {
+
   document.getElementById("idRegistroAsignado").value = idRegistro;
-  document.getElementById("territorioFinalizar").value = "Territorio " + numeroTerritorio;
+  document.getElementById("territorioFinalizar").value =
+      "Territorio " + numeroTerritorio;
+
   document.getElementById("fechaFinFinalizar").value = "";
 
-  document.getElementById("panelFinalizar").classList.remove("oculto");
+  document.getElementById("reporte").style.display = "none";
 
-  mostrarToast("Indicá la fecha fin real del territorio.", "success");
+  document.getElementById("panelFinalizar")
+      .classList.remove("oculto");
+
+  window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+  });
 }
 
 function cerrarPanelFinalizar() {
-  document.getElementById("panelFinalizar").classList.add("oculto");
+
+  document.getElementById("panelFinalizar")
+      .classList.add("oculto");
+
+  document.getElementById("reporte").style.display = "grid";
 }
 
 async function finalizarTerritorio() {
