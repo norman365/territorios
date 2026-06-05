@@ -59,10 +59,10 @@ async function cargarReporte() {
     let clase = "";
     let texto = `T${t.numero_territorio}`;
 
-   if (t.estado === "ASIGNADO") {
+    if (t.estado === "ASIGNADO") {
       clase = "asignado";
       texto += "<br>Asignado";
-    
+
       div.onclick = () => {
         abrirPanelFinalizar(
           t.id_registro_asignado,
@@ -70,9 +70,15 @@ async function cargarReporte() {
           t.fecha_asignacion
         );
       };
+
     } else if (t.estado === "NUNCA_HECHO") {
       clase = "nunca";
       texto += "<br>Nunca";
+
+      div.onclick = () => {
+        abrirDetalleTerritorio(t.numero_territorio);
+      };
+
     } else {
       const dias = t.dias_sin_hacer;
 
@@ -82,15 +88,14 @@ async function cargarReporte() {
       else clase = "rojo";
 
       texto += `<br>${dias} días`;
+
+      div.onclick = () => {
+        abrirDetalleTerritorio(t.numero_territorio);
+      };
     }
 
     div.classList.add(clase);
     div.innerHTML = texto;
-
-    div.onclick = () => {
-      abrirDetalleTerritorio(t.numero_territorio);
-    };
-
     contenedor.appendChild(div);
   });
 }
