@@ -76,9 +76,9 @@ async function cargarReporte() {
     } else {
       const dias = t.dias_sin_hacer;
 
-      if (dias <= 30) clase = "verde";
-      else if (dias <= 90) clase = "amarillo";
-      else if (dias <= 180) clase = "naranja";
+      if (dias <= 20) clase = "verde";
+      else if (dias <= 35) clase = "amarillo";
+      else if (dias <= 50) clase = "naranja";
       else clase = "rojo";
 
       texto += `<br>${dias} días`;
