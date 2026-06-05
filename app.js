@@ -109,4 +109,16 @@ function mostrarVista(vista) {
   }
 }
 
+function cargarComboTerritorios() {
+  const select = document.getElementById("territorio");
+
+  for (let i = 1; i <= 110; i++) {
+    const option = document.createElement("option");
+    option.value = i;
+    option.textContent = "Territorio " + i;
+    select.appendChild(option);
+  }
+}
+
+cargarComboTerritorios() 
 cargarReporte();
