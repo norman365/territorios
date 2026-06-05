@@ -39,6 +39,21 @@
 <section id="vistaReporte" class="card oculto">
   <h2>Reporte</h2>
   <div id="reporte" class="grid"></div>
+
+  <div id="panelFinalizar" class="panel-finalizar oculto">
+    <h3>Finalizar territorio</h3>
+
+    <input type="hidden" id="idRegistroAsignado">
+
+    <label>Territorio</label>
+    <input id="territorioFinalizar" type="text" readonly>
+
+    <label>Fecha fin real</label>
+    <input id="fechaFinFinalizar" type="date">
+
+    <button onclick="finalizarTerritorio()">Finalizar</button>
+    <button class="btn-secundario" onclick="cerrarPanelFinalizar()">Cancelar</button>
+  </div>
 </section>
 
 <div id="toast"></div>
