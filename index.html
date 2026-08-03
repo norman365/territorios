@@ -13,6 +13,7 @@
 <nav class="tabs">
   <button type="button" onclick="mostrarVista('carga')">Cargar</button>
   <button type="button" onclick="mostrarVista('reporte')">Reporte</button>
+  <button type="button" onclick="mostrarVista('salidas')">Salidas</button>
 </nav>
 
 <section id="vistaCarga" class="card">
@@ -38,7 +39,7 @@
 <section id="vistaReporte" class="card oculto">
   <h2>Reporte</h2>
 
-  <button type="button" class="btn-secundario" onclick="mostrarVista('carpeta')">
+  <button type="button" class="btn-secundario btn-acciones" onclick="mostrarVista('carpeta')">
     Generar Registros para la Carpeta
   </button>
 
@@ -79,6 +80,48 @@
   </button>
 </section>
 
+<section id="vistaSalidas" class="card oculto">
+  <h2>Programa de salidas</h2>
+  <p class="ayuda">
+    Semana domingo a sábado. Podés partir de la semana anterior, editar y generar
+    la imagen para WhatsApp.
+  </p>
+
+  <label for="salidasDomingo">Domingo de la semana</label>
+  <input id="salidasDomingo" type="date">
+
+  <div class="acciones-fila">
+    <button type="button" class="btn-secundario" onclick="cargarProgramaSemana()">Cargar semana</button>
+    <button type="button" class="btn-secundario" onclick="cargarDesdeSemanaAnterior()">Usar semana anterior</button>
+  </div>
+
+  <div id="salidasEditor" class="oculto">
+    <div id="salidasDias"></div>
+
+    <div class="panel-finalizar">
+      <h3>Recordatorios / Limpieza</h3>
+      <label for="recordatorioDesde">Desde</label>
+      <input id="recordatorioDesde" type="date">
+      <label for="recordatorioHasta">Hasta</label>
+      <input id="recordatorioHasta" type="date">
+      <label for="recordatorioGrupo">Grupo</label>
+      <select id="recordatorioGrupo">
+        <option value="1">Grupo 1</option>
+        <option value="2">Grupo 2</option>
+        <option value="3">Grupo 3</option>
+        <option value="4">Grupo 4</option>
+        <option value="5">Grupo 5</option>
+      </select>
+    </div>
+
+    <div class="acciones-fila">
+      <button type="button" onclick="guardarProgramaSemana()">Guardar semana</button>
+      <button type="button" class="btn-secundario" onclick="generarImagenSalidas('descargar')">Descargar imagen</button>
+      <button type="button" class="btn-secundario" onclick="generarImagenSalidas('compartir')">Compartir</button>
+    </div>
+  </div>
+</section>
+
 <div id="panelDetalle" class="panel-finalizar oculto">
   <h3 id="tituloDetalle">Detalle territorio</h3>
 
@@ -89,11 +132,18 @@
   </button>
 </div>
 
+<!-- Plantilla offscreen para capturar la imagen del programa -->
+<div id="salidasCaptureWrap" aria-hidden="true">
+  <div id="salidasCapture"></div>
+</div>
+
 <div id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="s13-pdf.js"></script>
+<script src="salidas.js"></script>
 <script src="app.js"></script>
 
 </body>

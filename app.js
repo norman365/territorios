@@ -121,6 +121,7 @@ function mostrarVista(vista) {
   document.getElementById("vistaCarga").classList.add("oculto");
   document.getElementById("vistaReporte").classList.add("oculto");
   document.getElementById("vistaCarpeta").classList.add("oculto");
+  document.getElementById("vistaSalidas").classList.add("oculto");
   document.getElementById("panelDetalle").classList.add("oculto");
 
   if (vista === "carga") {
@@ -137,6 +138,11 @@ function mostrarVista(vista) {
   if (vista === "carpeta") {
     document.getElementById("vistaCarpeta").classList.remove("oculto");
     prepararFiltroAnioServicio();
+  }
+
+  if (vista === "salidas") {
+    document.getElementById("vistaSalidas").classList.remove("oculto");
+    prepararVistaSalidas();
   }
 }
 
@@ -373,5 +379,20 @@ function formatearFecha(fecha) {
   return `${partes[2]}/${partes[1]}/${partes[0]}`;
 }
 
+function habilitarAperturaCalendario() {
+  document.querySelectorAll('input[type="date"]').forEach((input) => {
+    input.addEventListener("click", () => {
+      if (typeof input.showPicker === "function") {
+        try {
+          input.showPicker();
+        } catch (_) {
+          // Algunos navegadores bloquean showPicker fuera de un gesto directo.
+        }
+      }
+    });
+  });
+}
+
 cargarComboTerritorios();
+habilitarAperturaCalendario();
 cargarReporte();

@@ -24,6 +24,23 @@ input, textarea, button, select {
   font-size: 16px;
 }
 
+input[type="date"] {
+  position: relative;
+  cursor: pointer;
+}
+
+/* Permite abrir el calendario tocando cualquier parte del campo */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
 label {
   display: block;
   margin-top: 12px;
@@ -119,8 +136,8 @@ button {
 
 .tabs button {
   flex: 1;
-  padding: 14px;
-  font-size: 16px;
+  padding: 14px 8px;
+  font-size: 15px;
 }
 
 .oculto {
@@ -168,6 +185,11 @@ button {
   background: #777;
 }
 
+.btn-acciones {
+  margin-top: 8px;
+  margin-bottom: 24px;
+}
+
 .ayuda {
   margin: 0 0 12px;
   color: #444;
@@ -199,4 +221,278 @@ button {
 .tabla-detalle th {
   background: #222;
   color: white;
+}
+
+/* ===== Programa de salidas ===== */
+.acciones-fila {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.acciones-fila button {
+  margin-top: 0;
+}
+
+.dia-seccion {
+  margin-top: 18px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.dia-seccion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #C39CEB;
+  color: #222;
+}
+
+.btn-mini {
+  width: auto;
+  margin-top: 0;
+  padding: 8px 12px;
+  font-size: 14px;
+  background: #222;
+}
+
+.btn-peligro {
+  background: #a33;
+}
+
+.btn-link {
+  width: auto;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: #224;
+  text-decoration: underline;
+  font-size: 14px;
+}
+
+.reunion-fija {
+  padding: 10px 14px;
+  background: #f3e9fb;
+  color: #444;
+  font-size: 14px;
+  border-top: 1px solid #ddd;
+}
+
+.salida-card {
+  padding: 14px;
+  border-top: 1px solid #e5e5e5;
+  background: #fafafa;
+}
+
+.salida-card-top {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+}
+
+.salida-card-top label {
+  flex: 1;
+  margin-top: 0;
+}
+
+.campo-grupo {
+  margin-top: 12px;
+}
+
+.campo-grupo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chips-scroll {
+  max-height: 160px;
+  overflow: auto;
+  padding: 4px 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 0;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.chip-sm {
+  padding: 4px 6px;
+  font-size: 13px;
+}
+
+.chip input {
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.terr-add-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.terr-add-row select {
+  margin-top: 0;
+}
+
+.terr-add-row .btn-mini {
+  flex: 0 0 auto;
+}
+
+.chip-selected {
+  background: #eee;
+  gap: 6px;
+}
+
+.chip-x {
+  width: auto;
+  margin: 0;
+  padding: 0 4px;
+  background: transparent;
+  color: #222;
+  font-size: 16px;
+  line-height: 1;
+}
+
+details.campo-grupo summary {
+  cursor: pointer;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+/* Captura imagen (offscreen) */
+#salidasCaptureWrap {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 980px;
+  pointer-events: none;
+}
+
+.cap-root {
+  width: 960px;
+  background: #fff;
+  color: #000;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.cap-title-wrap {
+  background: #C39CEB;
+  text-align: center;
+  padding: 10px 12px 8px;
+  border: 2px solid #000;
+  border-bottom: 0;
+}
+
+.cap-title {
+  font-size: 28px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.cap-verse {
+  margin-top: 4px;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.cap-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+}
+
+.cap-table th,
+.cap-table td {
+  border: 1.5px solid #000;
+  padding: 6px 4px;
+  text-align: center;
+  vertical-align: middle;
+  word-wrap: break-word;
+}
+
+.cap-table th {
+  background: #B7B7B7;
+  font-weight: bold;
+}
+
+.cap-table th:nth-child(1),
+.cap-table td.cap-dia { width: 92px; }
+.cap-table th:nth-child(2) { width: 70px; }
+.cap-table th:nth-child(3) { width: 140px; }
+.cap-table th:nth-child(4) { width: 210px; }
+.cap-table th:nth-child(5) { width: 90px; }
+.cap-table th:nth-child(6) { width: 140px; }
+
+.cap-dia {
+  padding: 0;
+}
+
+.cap-dia-nombre {
+  background: #C39CEB;
+  font-weight: bold;
+  padding: 8px 4px;
+  border-bottom: 1.5px solid #000;
+}
+
+.cap-dia-fecha {
+  padding: 8px 4px;
+  background: #fff;
+}
+
+.cap-reunion {
+  background: #C39CEB;
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.cap-recordatorios-title {
+  background: #C39CEB;
+  border: 2px solid #000;
+  border-top: 0;
+  text-align: center;
+  font-weight: bold;
+  font-size: 18px;
+  padding: 8px;
+}
+
+.cap-recordatorios-body {
+  border: 2px solid #000;
+  border-top: 0;
+  text-align: center;
+  font-weight: bold;
+  font-size: 22px;
+  padding: 16px 10px;
+}
+
+@media (min-width: 700px) {
+  .acciones-fila {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .tabs button {
+    font-size: 15px;
+  }
 }
