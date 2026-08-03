@@ -7,10 +7,15 @@ async function guardar() {
   const numero = document.getElementById("territorio").value;
   const fechaInicio = document.getElementById("fechaInicio").value;
   const fechaFin = document.getElementById("fechaFin").value;
-  const observaciones = document.getElementById("observaciones").value;
+  const asignado = document.getElementById("asignado").value.trim();
 
   if (!numero || !fechaInicio) {
     mostrarToast("Completá territorio y fecha de inicio.", "error");
+    return;
+  }
+
+  if (!asignado) {
+    mostrarToast("Completá a quién se asignó el territorio.", "error");
     return;
   }
 
@@ -20,7 +25,7 @@ async function guardar() {
       numero_territorio: Number(numero),
       fecha_inicio: fechaInicio,
       fecha_fin: fechaFin || null,
-      observaciones: observaciones
+      observaciones: asignado
     });
 
   if (error) {
@@ -33,7 +38,7 @@ async function guardar() {
   document.getElementById("territorio").value = "";
   document.getElementById("fechaInicio").value = "";
   document.getElementById("fechaFin").value = "";
-  document.getElementById("observaciones").value = "";
+  document.getElementById("asignado").value = "";
 
   cargarReporte();
 }
@@ -115,6 +120,8 @@ function mostrarToast(mensaje, tipo = "success") {
 function mostrarVista(vista) {
   document.getElementById("vistaCarga").classList.add("oculto");
   document.getElementById("vistaReporte").classList.add("oculto");
+  document.getElementById("vistaCarpeta").classList.add("oculto");
+  document.getElementById("panelDetalle").classList.add("oculto");
 
   if (vista === "carga") {
     document.getElementById("vistaCarga").classList.remove("oculto");
@@ -122,7 +129,91 @@ function mostrarVista(vista) {
 
   if (vista === "reporte") {
     document.getElementById("vistaReporte").classList.remove("oculto");
+    document.getElementById("reporte").style.display = "grid";
+    document.getElementById("panelFinalizar").classList.add("oculto");
     cargarReporte();
+  }
+
+  if (vista === "carpeta") {
+    document.getElementById("vistaCarpeta").classList.remove("oculto");
+    prepararFiltroAnioServicio();
+  }
+}
+
+function anioServicioActual() {
+  const hoy = new Date();
+  const y = hoy.getFullYear();
+  const m = hoy.getMonth() + 1;
+  return m >= 9 ? y + 1 : y;
+}
+
+async function prepararFiltroAnioServicio() {
+  const select = document.getElementById("anioServicio");
+  const actual = anioServicioActual();
+
+  const { data, error } = await db
+    .from("territorios_registro")
+    .select("fecha_inicio,fecha_fin");
+
+  const anios = new Set([actual, actual - 1, actual + 1]);
+
+  if (!error && data) {
+    data.forEach((r) => {
+      const clave = r.fecha_fin || r.fecha_inicio;
+      const anio = anioServicioDeFecha(clave);
+      if (anio) anios.add(anio);
+    });
+  }
+
+  const ordenados = [...anios].sort((a, b) => b - a);
+  select.innerHTML = "";
+
+  ordenados.forEach((anio) => {
+    const option = document.createElement("option");
+    option.value = anio;
+    option.textContent = String(anio);
+    if (anio === actual) option.selected = true;
+    select.appendChild(option);
+  });
+}
+
+async function descargarS13() {
+  const anio = Number(document.getElementById("anioServicio").value);
+  const btn = document.getElementById("btnDescargarS13");
+
+  if (!anio) {
+    mostrarToast("Seleccioná un año de servicio.", "error");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Generando PDF...";
+
+  try {
+    const { data, error } = await db
+      .from("territorios_registro")
+      .select("*")
+      .order("numero_territorio")
+      .order("fecha_inicio");
+
+    if (error) throw new Error(error.message);
+
+    const bytes = await generarPdfS13(data || [], anio);
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `S-13_Registros_Carpeta_${anio}.pdf`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+    mostrarToast("PDF generado correctamente.", "success");
+  } catch (err) {
+    mostrarToast("Error al generar PDF: " + err.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Descargar PDF S-13";
   }
 }
 
@@ -138,7 +229,7 @@ function cargarComboTerritorios() {
 }
 
 function abrirPanelFinalizar(idRegistro, numeroTerritorio) {
-
+  document.getElementById("panelDetalle").classList.add("oculto");
   document.getElementById("idRegistroAsignado").value = idRegistro;
   document.getElementById("territorioFinalizar").value =
       "Territorio " + numeroTerritorio;
@@ -157,7 +248,6 @@ function abrirPanelFinalizar(idRegistro, numeroTerritorio) {
 }
 
 function cerrarPanelFinalizar() {
-
   document.getElementById("panelFinalizar")
       .classList.add("oculto");
 
@@ -218,7 +308,7 @@ async function abrirDetalleTerritorio(numeroTerritorio) {
             <th>Inicio</th>
             <th>Fin</th>
             <th>Día fin</th>
-            <th>Obs.</th>
+            <th>Asignado</th>
           </tr>
         </thead>
         <tbody>
@@ -283,5 +373,5 @@ function formatearFecha(fecha) {
   return `${partes[2]}/${partes[1]}/${partes[0]}`;
 }
 
-cargarComboTerritorios() 
+cargarComboTerritorios();
 cargarReporte();

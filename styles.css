@@ -168,6 +168,17 @@ button {
   background: #777;
 }
 
+.ayuda {
+  margin: 0 0 12px;
+  color: #444;
+  line-height: 1.4;
+}
+
+#btnDescargarS13:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
 .tabla-scroll {
   overflow-x: auto;
 }

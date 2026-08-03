@@ -11,33 +11,37 @@
 <h1>Registro de Territorios</h1>
 
 <nav class="tabs">
-  <button onclick="mostrarVista('carga')">Cargar</button>
-  <button onclick="mostrarVista('reporte')">Reporte</button>
+  <button type="button" onclick="mostrarVista('carga')">Cargar</button>
+  <button type="button" onclick="mostrarVista('reporte')">Reporte</button>
 </nav>
 
 <section id="vistaCarga" class="card">
   <h2>Cargar territorio</h2>
 
-  <label>Territorio</label>
-
+  <label for="territorio">Territorio</label>
   <select id="territorio">
     <option value="">Seleccionar territorio...</option>
   </select>
 
-  <label>Fecha inicio</label>
+  <label for="fechaInicio">Fecha inicio</label>
   <input id="fechaInicio" type="date">
 
-  <label>Fecha fin</label>
+  <label for="fechaFin">Fecha fin</label>
   <input id="fechaFin" type="date">
 
-  <label>Observaciones</label>
-  <textarea id="observaciones"></textarea>
+  <label for="asignado">Asignado</label>
+  <input id="asignado" type="text" autocomplete="name" placeholder="Nombre de quien lo recibió">
 
-  <button onclick="guardar()">Guardar</button>
+  <button type="button" onclick="guardar()">Guardar</button>
 </section>
 
 <section id="vistaReporte" class="card oculto">
   <h2>Reporte</h2>
+
+  <button type="button" class="btn-secundario" onclick="mostrarVista('carpeta')">
+    Generar Registros para la Carpeta
+  </button>
+
   <div id="reporte" class="grid"></div>
 
   <div id="panelFinalizar" class="panel-finalizar oculto">
@@ -45,15 +49,34 @@
 
     <input type="hidden" id="idRegistroAsignado">
 
-    <label>Territorio</label>
+    <label for="territorioFinalizar">Territorio</label>
     <input id="territorioFinalizar" type="text" readonly>
 
-    <label>Fecha fin real</label>
+    <label for="fechaFinFinalizar">Fecha fin real</label>
     <input id="fechaFinFinalizar" type="date">
 
-    <button onclick="finalizarTerritorio()">Finalizar</button>
-    <button class="btn-secundario" onclick="cerrarPanelFinalizar()">Cancelar</button>
+    <button type="button" onclick="finalizarTerritorio()">Finalizar</button>
+    <button type="button" class="btn-secundario" onclick="cerrarPanelFinalizar()">Cancelar</button>
   </div>
+</section>
+
+<section id="vistaCarpeta" class="card oculto">
+  <h2>Registros para la Carpeta (S-13)</h2>
+  <p class="ayuda">
+    Generá el PDF oficial de asignación de territorio filtrado por año de servicio
+    (1 de septiembre al 31 de agosto).
+  </p>
+
+  <label for="anioServicio">Año de servicio</label>
+  <select id="anioServicio"></select>
+
+  <button type="button" id="btnDescargarS13" onclick="descargarS13()">
+    Descargar PDF S-13
+  </button>
+
+  <button type="button" class="btn-secundario" onclick="mostrarVista('reporte')">
+    Volver al reporte
+  </button>
 </section>
 
 <div id="panelDetalle" class="panel-finalizar oculto">
@@ -61,13 +84,16 @@
 
   <div id="detalleTerritorio"></div>
 
-  <button class="btn-secundario" onclick="cerrarDetalleTerritorio()">
+  <button type="button" class="btn-secundario" onclick="cerrarDetalleTerritorio()">
     Volver
   </button>
 </div>
 
 <div id="toast"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="s13-pdf.js"></script>
 <script src="app.js"></script>
 
 </body>
