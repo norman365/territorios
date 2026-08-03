@@ -96,26 +96,41 @@
   </div>
 
   <div id="salidasEditor" class="oculto">
-    <div id="salidasDias"></div>
+    <div class="acciones-fila acciones-editor">
+      <button type="button" class="btn-secundario" onclick="agregarFilaSalida()">+ Agregar fila</button>
+      <button type="button" class="btn-secundario" onclick="reordenarFilasSalida()">Reordenar</button>
+    </div>
+    <p class="ayuda ayuda-compacta">
+      Editá como en Excel. Territorio: clic en el campo para elegir tiles.
+      Manzanas (solo 1 territorio): <code>A-B-C</code>.
+      Reuniones de jueves 20:00 y sábado 19:00 se agregan solas en la imagen.
+    </p>
+    <div id="salidasDias" class="salidas-grid-wrap"></div>
 
     <div class="panel-finalizar">
       <h3>Recordatorios / Limpieza</h3>
-      <label for="recordatorioDesde">Desde</label>
-      <input id="recordatorioDesde" type="date">
-      <label for="recordatorioHasta">Hasta</label>
-      <input id="recordatorioHasta" type="date">
-      <label for="recordatorioGrupo">Grupo</label>
-      <select id="recordatorioGrupo">
-        <option value="1">Grupo 1</option>
-        <option value="2">Grupo 2</option>
-        <option value="3">Grupo 3</option>
-        <option value="4">Grupo 4</option>
-        <option value="5">Grupo 5</option>
-      </select>
+      <div class="recordatorio-grid">
+        <label for="recordatorioDesde">Desde
+          <input id="recordatorioDesde" type="date">
+        </label>
+        <label for="recordatorioHasta">Hasta
+          <input id="recordatorioHasta" type="date">
+        </label>
+        <label for="recordatorioGrupo">Grupo
+          <select id="recordatorioGrupo">
+            <option value="1">Grupo 1</option>
+            <option value="2">Grupo 2</option>
+            <option value="3">Grupo 3</option>
+            <option value="4">Grupo 4</option>
+            <option value="5">Grupo 5</option>
+          </select>
+        </label>
+      </div>
     </div>
 
-    <div class="acciones-fila">
+    <div class="acciones-fila acciones-imagen">
       <button type="button" onclick="guardarProgramaSemana()">Guardar semana</button>
+      <button type="button" class="btn-secundario" onclick="generarImagenSalidas('previsualizar')">Previsualizar</button>
       <button type="button" class="btn-secundario" onclick="generarImagenSalidas('descargar')">Descargar imagen</button>
       <button type="button" class="btn-secundario" onclick="generarImagenSalidas('compartir')">Compartir</button>
     </div>
@@ -130,6 +145,40 @@
   <button type="button" class="btn-secundario" onclick="cerrarDetalleTerritorio()">
     Volver
   </button>
+</div>
+
+<div id="modalTerritorios" class="modal-overlay oculto" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h3>Seleccionar territorios</h3>
+      <button type="button" class="btn-mini btn-peligro" onclick="cerrarModalTerritorios()">×</button>
+    </div>
+    <p class="ayuda ayuda-compacta">
+      Tocá uno o varios. Mismos colores que el reporte.
+    </p>
+    <div id="modalTerritoriosGrid" class="grid modal-terr-grid"></div>
+    <div class="modal-footer">
+      <button type="button" class="btn-secundario" onclick="cerrarModalTerritorios()">Cancelar</button>
+      <button type="button" onclick="confirmarModalTerritorios()">Usar selección</button>
+    </div>
+  </div>
+</div>
+
+<div id="modalPreviewSalidas" class="modal-overlay oculto" role="dialog" aria-modal="true">
+  <div class="modal-panel modal-panel-preview">
+    <div class="modal-header">
+      <h3>Vista previa del programa</h3>
+      <button type="button" class="btn-mini btn-peligro" onclick="cerrarPreviewSalidas()">×</button>
+    </div>
+    <div id="previewSalidasBody" class="preview-body">
+      <p class="ayuda">Generando vista previa...</p>
+    </div>
+    <div class="modal-footer modal-footer-3">
+      <button type="button" class="btn-secundario" onclick="cerrarPreviewSalidas()">Cerrar</button>
+      <button type="button" class="btn-secundario" onclick="generarImagenSalidas('descargar')">Descargar</button>
+      <button type="button" onclick="generarImagenSalidas('compartir')">Compartir</button>
+    </div>
+  </div>
 </div>
 
 <!-- Plantilla offscreen para capturar la imagen del programa -->

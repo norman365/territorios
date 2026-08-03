@@ -59,15 +59,11 @@ async function cargarReporte() {
 
   data.forEach(t => {
     const div = document.createElement("div");
-    div.classList.add("territorio");
-
-    let clase = "";
-    let texto = `T${t.numero_territorio}`;
+    const info = infoTileTerritorio(t);
+    div.classList.add("territorio", info.clase);
+    div.innerHTML = info.texto;
 
     if (t.estado === "ASIGNADO") {
-      clase = "asignado";
-      texto += "<br>Asignado";
-
       div.onclick = () => {
         abrirPanelFinalizar(
           t.id_registro_asignado,
@@ -75,34 +71,36 @@ async function cargarReporte() {
           t.fecha_asignacion
         );
       };
-
-    } else if (t.estado === "NUNCA_HECHO") {
-      clase = "nunca";
-      texto += "<br>Nunca";
-
-      div.onclick = () => {
-        abrirDetalleTerritorio(t.numero_territorio);
-      };
-
     } else {
-      const dias = t.dias_sin_hacer;
-
-      if (dias <= 20) clase = "verde";
-      else if (dias <= 35) clase = "amarillo";
-      else if (dias <= 50) clase = "naranja";
-      else clase = "rojo";
-
-      texto += `<br>${dias} días`;
-
       div.onclick = () => {
         abrirDetalleTerritorio(t.numero_territorio);
       };
     }
 
-    div.classList.add(clase);
-    div.innerHTML = texto;
     contenedor.appendChild(div);
   });
+}
+
+function infoTileTerritorio(t) {
+  let clase = "";
+  let texto = `T${t.numero_territorio}`;
+
+  if (t.estado === "ASIGNADO") {
+    clase = "asignado";
+    texto += "<br>Asignado";
+  } else if (t.estado === "NUNCA_HECHO") {
+    clase = "nunca";
+    texto += "<br>Nunca";
+  } else {
+    const dias = t.dias_sin_hacer;
+    if (dias <= 20) clase = "verde";
+    else if (dias <= 35) clase = "amarillo";
+    else if (dias <= 50) clase = "naranja";
+    else clase = "rojo";
+    texto += `<br>${dias} días`;
+  }
+
+  return { clase, texto };
 }
 
 function mostrarToast(mensaje, tipo = "success") {

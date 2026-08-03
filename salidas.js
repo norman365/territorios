@@ -150,7 +150,8 @@ async function cargarProgramaSemana() {
       mostrarToast("Semana cargada.", "success");
     } else {
       programaActual = programaVacio(domingo);
-      mostrarToast("Semana nueva. Completá las salidas o usá la anterior.", "success");
+      programaActual.items.push(salidaVacia(0));
+      mostrarToast("Semana nueva. Completá las filas o usá la anterior.", "success");
     }
 
     renderEditorSalidas();
@@ -242,31 +243,76 @@ function leerRecordatoriosDelForm() {
 
 function sincronizarItemsDesdeDom() {
   if (!programaActual) return;
-  const cards = document.querySelectorAll(".salida-card");
+  const rows = document.querySelectorAll("#tablaSalidas tbody tr.salida-row");
   const items = [];
 
-  cards.forEach((card) => {
-    const uid = card.dataset.uid;
-    const dia = Number(card.dataset.dia);
-    const horario = card.querySelector(".salida-horario").value;
-    const conductor = card.querySelector(".salida-conductor").value.trim();
-    const punto = card.querySelector(".salida-punto").value.trim();
-    const grupos = [...card.querySelectorAll(".chk-grupo:checked")].map((el) => Number(el.value));
-    const territorios = getTerritoriosCard(card);
+  rows.forEach((row) => {
+    const uid = row.dataset.uid;
+    const dia = Number(row.querySelector(".salida-dia").value);
+    const horario = row.querySelector(".salida-horario").value;
+    const conductor = row.querySelector(".salida-conductor").value.trim();
+    const punto = row.querySelector(".salida-punto").value.trim();
+    const grupos = [...row.querySelectorAll(".chk-grupo:checked")].map((el) => Number(el.value));
+    const territorios = parseTerritoriosTexto(row.querySelector(".salida-territorios").value);
     let manzanas = [];
     if (territorios.length === 1) {
-      manzanas = [...card.querySelectorAll(".chk-manzana:checked")].map((el) => el.value);
+      manzanas = parseManzanasTexto(row.querySelector(".salida-manzanas").value);
     }
     items.push({ uid, dia, horario, conductor, punto_encuentro: punto, grupos, territorios, manzanas });
   });
 
-  programaActual.items = ordenarItems(items);
+  programaActual.items = items;
   leerRecordatoriosDelForm();
+}
+
+function parseTerritoriosTexto(texto) {
+  if (!texto) return [];
+  const nums = String(texto)
+    .split(/[^0-9]+/)
+    .map((x) => Number(x))
+    .filter((n) => n >= 1 && n <= 110);
+  return [...new Set(nums)].sort((a, b) => a - b);
+}
+
+function parseManzanasTexto(texto) {
+  if (!texto) return [];
+  const letras = String(texto)
+    .toUpperCase()
+    .split(/[^A-I]+/)
+    .filter((x) => MANZANAS.includes(x));
+  return [...new Set(letras)].sort();
+}
+
+function textoTerritorios(territorios) {
+  return (territorios || []).slice().sort((a, b) => a - b).join("-");
+}
+
+function textoManzanas(manzanas) {
+  return (manzanas || []).slice().sort().join("-");
+}
+
+function agregarFilaSalida() {
+  if (!programaActual) return;
+  sincronizarItemsDesdeDom();
+  programaActual.items.push(salidaVacia(0));
+  renderEditorSalidas();
+  const rows = document.querySelectorAll("#tablaSalidas tbody tr.salida-row");
+  const last = rows[rows.length - 1];
+  if (last) last.querySelector(".salida-horario")?.focus();
+}
+
+function reordenarFilasSalida() {
+  if (!programaActual) return;
+  sincronizarItemsDesdeDom();
+  programaActual.items = ordenarItems(programaActual.items);
+  renderEditorSalidas();
+  mostrarToast("Filas ordenadas por día, horario y grupo.", "success");
 }
 
 async function guardarProgramaSemana() {
   if (!programaActual) return;
   sincronizarItemsDesdeDom();
+  programaActual.items = ordenarItems(programaActual.items);
 
   const payload = {
     domingo: programaActual.domingo,
@@ -322,55 +368,73 @@ function renderEditorSalidas() {
   document.getElementById("recordatorioHasta").value = programaActual.recordatorio_hasta || "";
   document.getElementById("recordatorioGrupo").value = String(programaActual.recordatorio_grupo || 1);
 
-  cont.innerHTML = "";
+  const optsDia = DIAS_NOMBRE.map((nombre, i) => {
+    const fecha = formatearFechaCorta(sumarDiasISO(programaActual.domingo, i));
+    return `<option value="${i}">${nombre} ${fecha}</option>`;
+  }).join("");
+
+  const optsHorario = HORARIOS.map((h) => `<option value="${h}">${h}</option>`).join("");
+
+  cont.innerHTML = `
+    <table class="salidas-excel" id="tablaSalidas">
+      <thead>
+        <tr>
+          <th class="col-dia">Día</th>
+          <th class="col-hora">Horario</th>
+          <th class="col-cond">Conductor</th>
+          <th class="col-punto">Punto de encuentro</th>
+          <th class="col-grupo">Grupo</th>
+          <th class="col-terr">Territorio</th>
+          <th class="col-manz">Manzanas</th>
+          <th class="col-acc"></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  `;
+
+  const tbody = cont.querySelector("tbody");
 
   for (let dia = 0; dia < 7; dia++) {
-    const fechaDia = sumarDiasISO(programaActual.domingo, dia);
-    const seccion = document.createElement("div");
-    seccion.className = "dia-seccion";
-    seccion.innerHTML = `
-      <div class="dia-seccion-header">
-        <strong>${DIAS_NOMBRE[dia]} ${formatearFechaCorta(fechaDia)}</strong>
-        <button type="button" class="btn-mini" data-dia="${dia}">+ Agregar salida</button>
-      </div>
-      <div class="dia-salidas" data-dia-list="${dia}"></div>
-      ${
-        REUNIONES[dia]
-          ? `<div class="reunion-fija">Fijo: ${REUNIONES[dia]} Reunión de Congregación</div>`
-          : ""
-      }
-    `;
-    cont.appendChild(seccion);
+    const delDia = programaActual.items
+      .filter((it) => it.dia === dia)
+      .slice()
+      .sort((a, b) => {
+        const h = a.horario.localeCompare(b.horario);
+        if (h !== 0) return h;
+        const ga = (a.grupos || []).slice().sort((x, y) => x - y).join("-");
+        const gb = (b.grupos || []).slice().sort((x, y) => x - y).join("-");
+        return ga.localeCompare(gb);
+      });
 
-    seccion.querySelector(".btn-mini").onclick = () => {
-      sincronizarItemsDesdeDom();
-      programaActual.items.push(salidaVacia(dia));
-      programaActual.items = ordenarItems(programaActual.items);
-      renderEditorSalidas();
-    };
+    delDia.forEach((item) => {
+      tbody.appendChild(crearFilaSalida(item, optsDia, optsHorario));
+    });
+
+    if (REUNIONES[dia]) {
+      const tr = document.createElement("tr");
+      tr.className = "reunion-row";
+      tr.innerHTML = `
+        <td colspan="8">
+          ${DIAS_NOMBRE[dia]} ${formatearFechaCorta(sumarDiasISO(programaActual.domingo, dia))}
+          · ${REUNIONES[dia]} Reunión de Congregación (fijo en la imagen)
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
   }
-
-  programaActual.items.forEach((item) => {
-    const list = cont.querySelector(`[data-dia-list="${item.dia}"]`);
-    if (list) list.appendChild(crearCardSalida(item));
-  });
 
   habilitarAperturaCalendario();
 }
 
-function crearCardSalida(item) {
-  const card = document.createElement("div");
-  card.className = "salida-card";
-  card.dataset.uid = item.uid;
-  card.dataset.dia = String(item.dia);
-
-  const optsHorario = HORARIOS.map(
-    (h) => `<option value="${h}" ${h === item.horario ? "selected" : ""}>${h}</option>`
-  ).join("");
+function crearFilaSalida(item, optsDia, optsHorario) {
+  const tr = document.createElement("tr");
+  tr.className = "salida-row";
+  tr.dataset.uid = item.uid;
 
   const gruposHtml = GRUPOS.map(
     (g) => `
-      <label class="chip">
+      <label class="chip-inline">
         <input type="checkbox" class="chk-grupo" value="${g}" ${
           item.grupos.includes(g) ? "checked" : ""
         }>
@@ -378,134 +442,154 @@ function crearCardSalida(item) {
       </label>`
   ).join("");
 
-  const optsTerr = Array.from({ length: 110 }, (_, i) => i + 1)
-    .map((n) => `<option value="${n}">Territorio ${n}</option>`)
-    .join("");
-
-  const manzanasHtml = MANZANAS.map(
-    (m) => `
-      <label class="chip">
-        <input type="checkbox" class="chk-manzana" value="${m}" ${
-          item.manzanas.includes(m) ? "checked" : ""
-        }>
-        ${m}
-      </label>`
-  ).join("");
-
-  card.innerHTML = `
-    <div class="salida-card-top">
-      <label>Horario
-        <select class="salida-horario">${optsHorario}</select>
-      </label>
-      <button type="button" class="btn-mini btn-peligro salida-eliminar">Eliminar</button>
-    </div>
-    <label>Conductor
-      <input class="salida-conductor" type="text" value="${escapeAttr(item.conductor)}" placeholder="Opcional">
-    </label>
-    <label>Punto de encuentro
-      <input class="salida-punto" type="text" value="${escapeAttr(item.punto_encuentro)}" placeholder="Opcional">
-    </label>
-    <div class="campo-grupo">
-      <div class="campo-grupo-header">
-        <span>Grupos</span>
+  tr.innerHTML = `
+    <td>
+      <select class="salida-dia">${optsDia}</select>
+    </td>
+    <td>
+      <select class="salida-horario">${optsHorario}</select>
+    </td>
+    <td>
+      <input class="salida-conductor" type="text" value="${escapeAttr(item.conductor)}" placeholder="Nombre">
+    </td>
+    <td>
+      <input class="salida-punto" type="text" value="${escapeAttr(item.punto_encuentro)}" placeholder="Lugar">
+    </td>
+    <td>
+      <div class="grupos-cell">
+        ${gruposHtml}
         <button type="button" class="btn-link btn-todos-grupos">Todos</button>
       </div>
-      <div class="chips">${gruposHtml}</div>
-    </div>
-    <div class="campo-grupo">
-      <div class="campo-grupo-header"><span>Territorios</span></div>
-      <div class="terr-add-row">
-        <select class="salida-terr-select">${optsTerr}</select>
-        <button type="button" class="btn-mini btn-add-terr">Agregar</button>
-      </div>
-      <div class="chips terr-seleccionados"></div>
-    </div>
-    <div class="campo-manzanas ${item.territorios.length === 1 ? "" : "oculto"}">
-      <div class="campo-grupo-header"><span>Manzanas</span></div>
-      <div class="chips">${manzanasHtml}</div>
-    </div>
+    </td>
+    <td>
+      <input class="salida-territorios" type="text" readonly
+        value="${escapeAttr(textoTerritorios(item.territorios))}"
+        placeholder="Elegir..."
+        title="Clic para elegir territorios">
+    </td>
+    <td>
+      <input class="salida-manzanas" type="text" value="${escapeAttr(
+        textoManzanas(item.manzanas)
+      )}" placeholder="A-B-C" ${item.territorios.length === 1 ? "" : "disabled"}>
+    </td>
+    <td>
+      <button type="button" class="btn-mini btn-peligro salida-eliminar" title="Eliminar">×</button>
+    </td>
   `;
 
-  const renderTerrChips = () => {
-    const box = card.querySelector(".terr-seleccionados");
-    const territorios = getTerritoriosCard(card);
-    box.innerHTML = territorios
-      .map(
-        (n) => `
-        <span class="chip chip-selected">
-          T${n}
-          <button type="button" class="chip-x" data-terr="${n}" aria-label="Quitar">×</button>
-          <input type="hidden" class="chk-terr" value="${n}" checked>
-        </span>`
-      )
-      .join("");
+  tr.querySelector(".salida-dia").value = String(item.dia);
+  tr.querySelector(".salida-horario").value = item.horario || "10:00";
 
-    box.querySelectorAll(".chip-x").forEach((btn) => {
-      btn.onclick = () => {
-        const n = Number(btn.dataset.terr);
-        const actuales = getTerritoriosCard(card).filter((x) => x !== n);
-        setTerritoriosCard(card, actuales);
-        renderTerrChips();
-        syncManzanasVisibility();
-      };
-    });
-  };
-
-  const syncManzanasVisibility = () => {
-    const selected = getTerritoriosCard(card);
-    const box = card.querySelector(".campo-manzanas");
-    if (selected.length === 1) box.classList.remove("oculto");
-    else {
-      box.classList.add("oculto");
-      card.querySelectorAll(".chk-manzana").forEach((el) => {
-        el.checked = false;
-      });
+  const syncManzanas = () => {
+    const terr = parseTerritoriosTexto(tr.querySelector(".salida-territorios").value);
+    const input = tr.querySelector(".salida-manzanas");
+    if (terr.length === 1) {
+      input.disabled = false;
+    } else {
+      input.disabled = true;
+      input.value = "";
     }
   };
 
-  card.querySelector(".salida-eliminar").onclick = () => {
+  tr.querySelector(".salida-territorios").addEventListener("click", () => {
+    abrirModalTerritorios(tr.querySelector(".salida-territorios"), syncManzanas);
+  });
+
+  tr.querySelector(".salida-manzanas").addEventListener("blur", () => {
+    const m = parseManzanasTexto(tr.querySelector(".salida-manzanas").value);
+    tr.querySelector(".salida-manzanas").value = textoManzanas(m);
+  });
+
+  tr.querySelector(".btn-todos-grupos").onclick = () => {
+    tr.querySelectorAll(".chk-grupo").forEach((el) => {
+      el.checked = true;
+    });
+  };
+
+  tr.querySelector(".salida-eliminar").onclick = () => {
     sincronizarItemsDesdeDom();
     programaActual.items = programaActual.items.filter((x) => x.uid !== item.uid);
     renderEditorSalidas();
   };
 
-  card.querySelector(".btn-todos-grupos").onclick = () => {
-    card.querySelectorAll(".chk-grupo").forEach((el) => {
-      el.checked = true;
-    });
-  };
+  syncManzanas();
+  return tr;
+}
 
-  card.querySelector(".btn-add-terr").onclick = () => {
-    const n = Number(card.querySelector(".salida-terr-select").value);
-    const actuales = getTerritoriosCard(card);
-    if (!actuales.includes(n)) actuales.push(n);
-    setTerritoriosCard(card, actuales.sort((a, b) => a - b));
-    renderTerrChips();
-    syncManzanasVisibility();
-  };
+let modalTerritorioTarget = null;
+let modalTerritorioOnConfirm = null;
+let modalTerritorioSeleccion = new Set();
+let cacheReporteTerritorios = null;
 
-  card.querySelector(".salida-horario").addEventListener("change", () => {
-    sincronizarItemsDesdeDom();
-    programaActual.items = ordenarItems(programaActual.items);
-    renderEditorSalidas();
+async function abrirModalTerritorios(inputEl, onConfirm) {
+  modalTerritorioTarget = inputEl;
+  modalTerritorioOnConfirm = onConfirm;
+  modalTerritorioSeleccion = new Set(parseTerritoriosTexto(inputEl.value));
+
+  const modal = document.getElementById("modalTerritorios");
+  const grid = document.getElementById("modalTerritoriosGrid");
+  grid.innerHTML = "<p class='ayuda'>Cargando territorios...</p>";
+  modal.classList.remove("oculto");
+
+  try {
+    const { data, error } = await db
+      .from("vw_territorios_reporte")
+      .select("*")
+      .order("numero_territorio");
+    if (error) throw new Error(error.message);
+    cacheReporteTerritorios = data || [];
+    renderModalTerritoriosGrid();
+  } catch (err) {
+    grid.innerHTML = "";
+    mostrarToast("Error al cargar territorios: " + err.message, "error");
+    cerrarModalTerritorios();
+  }
+}
+
+function renderModalTerritoriosGrid() {
+  const grid = document.getElementById("modalTerritoriosGrid");
+  grid.innerHTML = "";
+
+  cacheReporteTerritorios.forEach((t) => {
+    const n = Number(t.numero_territorio);
+    const info = infoTileTerritorio(t);
+    const div = document.createElement("div");
+    div.className = `territorio ${info.clase}`;
+    if (modalTerritorioSeleccion.has(n)) div.classList.add("tile-selected");
+    div.innerHTML = info.texto;
+    div.onclick = () => {
+      if (modalTerritorioSeleccion.has(n)) modalTerritorioSeleccion.delete(n);
+      else modalTerritorioSeleccion.add(n);
+      div.classList.toggle("tile-selected", modalTerritorioSeleccion.has(n));
+    };
+    grid.appendChild(div);
   });
-
-  // seed territories
-  setTerritoriosCard(card, item.territorios.slice());
-  renderTerrChips();
-  syncManzanasVisibility();
-
-  return card;
 }
 
-function getTerritoriosCard(card) {
-  if (card._territorios) return card._territorios.slice();
-  return [...card.querySelectorAll(".chk-terr")].map((el) => Number(el.value));
+function cerrarModalTerritorios() {
+  document.getElementById("modalTerritorios").classList.add("oculto");
+  modalTerritorioTarget = null;
+  modalTerritorioOnConfirm = null;
 }
 
-function setTerritoriosCard(card, lista) {
-  card._territorios = lista.slice();
+function confirmarModalTerritorios() {
+  if (!modalTerritorioTarget) return;
+  const lista = [...modalTerritorioSeleccion].sort((a, b) => a - b);
+  modalTerritorioTarget.value = textoTerritorios(lista);
+  if (typeof modalTerritorioOnConfirm === "function") modalTerritorioOnConfirm();
+  cerrarModalTerritorios();
 }
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    const modal = document.getElementById("modalTerritorios");
+    if (modal && !modal.classList.contains("oculto")) cerrarModalTerritorios();
+  }
+});
+
+document.getElementById("modalTerritorios")?.addEventListener("click", (e) => {
+  if (e.target.id === "modalTerritorios") cerrarModalTerritorios();
+});
 
 function escapeAttr(value) {
   return String(value || "")
@@ -565,6 +649,19 @@ function filasParaImagen() {
   return porDia;
 }
 
+function celdaDiaHtml(dia, fechaDia, rowspan) {
+  // min-height garantiza espacio para la fecha aunque haya una sola fila
+  const minH = Math.max(58, 30 + rowspan * 34);
+  return `<td class="cap-dia" rowspan="${rowspan}">
+    <div class="cap-dia-inner" style="min-height:${minH}px">
+      <div class="cap-dia-nombre">${DIAS_NOMBRE[dia]}</div>
+      <div class="cap-dia-fecha-wrap">
+        <div class="cap-dia-fecha">${fechaDia}</div>
+      </div>
+    </div>
+  </td>`;
+}
+
 function construirHtmlImagen() {
   const porDia = filasParaImagen();
   let body = "";
@@ -576,23 +673,14 @@ function construirHtmlImagen() {
     if (!filasDia.length) {
       body += `
         <tr>
-          <td class="cap-dia" rowspan="1">
-            <div class="cap-dia-nombre">${DIAS_NOMBRE[dia]}</div>
-            <div class="cap-dia-fecha">${fechaDia}</div>
-          </td>
+          ${celdaDiaHtml(dia, fechaDia, 1)}
           <td></td><td></td><td></td><td></td><td></td>
         </tr>`;
       return;
     }
 
     filasDia.forEach((f, idx) => {
-      const diaCell =
-        idx === 0
-          ? `<td class="cap-dia" rowspan="${rowspan}">
-               <div class="cap-dia-nombre">${DIAS_NOMBRE[dia]}</div>
-               <div class="cap-dia-fecha">${fechaDia}</div>
-             </td>`
-          : "";
+      const diaCell = idx === 0 ? celdaDiaHtml(dia, fechaDia, rowspan) : "";
 
       if (f.tipo === "reunion") {
         body += `
@@ -671,13 +759,39 @@ async function generarImagenSalidas(modo) {
     const canvas = await html2canvas(capture.firstElementChild, {
       backgroundColor: "#ffffff",
       scale: 2,
-      useCORS: true
+      useCORS: true,
+      onclone: (_doc, el) => {
+        // html2canvas engrosa bordes al escalar; forzamos trazo fino en el clon
+        el.querySelectorAll(".cap-table, .cap-table th, .cap-table td, .cap-title-wrap, .cap-recordatorios-title, .cap-recordatorios-body, .cap-dia-nombre").forEach((node) => {
+          node.style.borderColor = "#000000";
+          node.style.borderStyle = "solid";
+          if (node.classList.contains("cap-title-wrap") ||
+              node.classList.contains("cap-recordatorios-title") ||
+              node.classList.contains("cap-recordatorios-body")) {
+            node.style.borderWidth = "0.5px";
+            if (!node.classList.contains("cap-title-wrap")) node.style.borderTopWidth = "0";
+            if (node.classList.contains("cap-title-wrap")) node.style.borderBottomWidth = "0";
+          } else if (node.classList.contains("cap-dia-nombre")) {
+            node.style.borderWidth = "0";
+            node.style.borderBottomWidth = "0.5px";
+          } else if (node.classList.contains("cap-table")) {
+            node.style.borderWidth = "0.5px";
+          } else {
+            node.style.borderWidth = "0.5px";
+          }
+        });
+      }
     });
 
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
     if (!blob) throw new Error("No se pudo generar la imagen.");
 
     const nombre = `Salidas_${programaActual.domingo}.png`;
+
+    if (modo === "previsualizar") {
+      mostrarPreviewSalidas(blob);
+      return;
+    }
 
     if (modo === "compartir" && navigator.canShare) {
       const file = new File([blob], nombre, { type: "image/png" });
@@ -709,3 +823,34 @@ async function generarImagenSalidas(modo) {
     mostrarToast("Error al generar imagen: " + err.message, "error");
   }
 }
+
+let previewSalidasUrl = null;
+
+function mostrarPreviewSalidas(blob) {
+  const modal = document.getElementById("modalPreviewSalidas");
+  const body = document.getElementById("previewSalidasBody");
+
+  if (previewSalidasUrl) URL.revokeObjectURL(previewSalidasUrl);
+  previewSalidasUrl = URL.createObjectURL(blob);
+
+  body.innerHTML = `<img src="${previewSalidasUrl}" alt="Vista previa del programa de salidas">`;
+  modal.classList.remove("oculto");
+}
+
+function cerrarPreviewSalidas() {
+  document.getElementById("modalPreviewSalidas").classList.add("oculto");
+  if (previewSalidasUrl) {
+    URL.revokeObjectURL(previewSalidasUrl);
+    previewSalidasUrl = null;
+  }
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  const preview = document.getElementById("modalPreviewSalidas");
+  if (preview && !preview.classList.contains("oculto")) cerrarPreviewSalidas();
+});
+
+document.getElementById("modalPreviewSalidas")?.addEventListener("click", (e) => {
+  if (e.target.id === "modalPreviewSalidas") cerrarPreviewSalidas();
+});
