@@ -761,7 +761,6 @@ async function generarImagenSalidas(modo) {
       scale: 2,
       useCORS: true,
       onclone: (_doc, el) => {
-        // html2canvas engrosa bordes al escalar; forzamos trazo fino en el clon
         el.querySelectorAll(".cap-table, .cap-table th, .cap-table td, .cap-title-wrap, .cap-recordatorios-title, .cap-recordatorios-body, .cap-dia-nombre").forEach((node) => {
           node.style.borderColor = "#000000";
           node.style.borderStyle = "solid";
@@ -786,38 +785,23 @@ async function generarImagenSalidas(modo) {
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
     if (!blob) throw new Error("No se pudo generar la imagen.");
 
-    const nombre = `Salidas_${programaActual.domingo}.png`;
+    guardarCacheImagenSalidas(blob);
 
     if (modo === "previsualizar") {
       mostrarPreviewSalidas(blob);
       return;
     }
 
-    if (modo === "compartir" && navigator.canShare) {
-      const file = new File([blob], nombre, { type: "image/png" });
-      if (navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: "Salidas al ministerio",
-          text: "Programa de salidas semanal"
-        });
-        mostrarToast("Listo para compartir.", "success");
-        return;
-      }
-    }
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = nombre;
-    a.click();
-    URL.revokeObjectURL(url);
-
     if (modo === "compartir") {
-      mostrarToast("Este dispositivo no permite compartir. Se descargó la imagen.", "success");
-    } else {
-      mostrarToast("Imagen descargada.", "success");
+      // En iOS/Safari, share() debe llamarse en el mismo gesto del usuario.
+      // Tras html2canvas ese gesto ya se perdió: abrimos preview y pedimos un segundo toque.
+      mostrarPreviewSalidas(blob);
+      mostrarToast("Tocá Compartir en la vista previa para enviarla.", "success");
+      return;
     }
+
+    descargarBlobSalidas(blob, ultimoNombreSalidas);
+    mostrarToast("Imagen descargada.", "success");
   } catch (err) {
     if (err && err.name === "AbortError") return;
     mostrarToast("Error al generar imagen: " + err.message, "error");
@@ -825,11 +809,80 @@ async function generarImagenSalidas(modo) {
 }
 
 let previewSalidasUrl = null;
+let ultimoBlobSalidas = null;
+let ultimoNombreSalidas = null;
+
+function guardarCacheImagenSalidas(blob) {
+  ultimoBlobSalidas = blob;
+  ultimoNombreSalidas = `Salidas_${programaActual.domingo}.png`;
+}
+
+function descargarBlobSalidas(blob, nombre) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nombre || "Salidas.png";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function descargarImagenSalidasCache() {
+  if (!ultimoBlobSalidas) {
+    generarImagenSalidas("descargar");
+    return;
+  }
+  descargarBlobSalidas(ultimoBlobSalidas, ultimoNombreSalidas);
+  mostrarToast("Imagen descargada.", "success");
+}
+
+/**
+ * Debe invocarse directo desde un click (sin await previo).
+ * iOS bloquea share() si el gesto del usuario ya expiró.
+ */
+function compartirImagenSalidasCache() {
+  if (!ultimoBlobSalidas) {
+    mostrarToast("Generá primero la vista previa.", "error");
+    return;
+  }
+
+  const nombre = ultimoNombreSalidas || "Salidas.png";
+  const file = new File([ultimoBlobSalidas], nombre, { type: "image/png" });
+
+  if (typeof navigator.share !== "function") {
+    descargarBlobSalidas(ultimoBlobSalidas, nombre);
+    mostrarToast("Este navegador no comparte archivos. Se descargó la imagen.", "success");
+    return;
+  }
+
+  const puedeArchivos =
+    typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] });
+
+  if (!puedeArchivos) {
+    descargarBlobSalidas(ultimoBlobSalidas, nombre);
+    mostrarToast("No se pueden compartir archivos aquí. Se descargó la imagen.", "success");
+    return;
+  }
+
+  // Llamada síncrona al share (sin await antes) para conservar el gesto en iOS
+  navigator
+    .share({
+      files: [file],
+      title: "Salidas al ministerio",
+      text: "Programa de salidas semanal"
+    })
+    .then(() => mostrarToast("Listo para compartir.", "success"))
+    .catch((err) => {
+      if (err && err.name === "AbortError") return;
+      descargarBlobSalidas(ultimoBlobSalidas, nombre);
+      mostrarToast("No se pudo compartir. Se descargó la imagen.", "success");
+    });
+}
 
 function mostrarPreviewSalidas(blob) {
   const modal = document.getElementById("modalPreviewSalidas");
   const body = document.getElementById("previewSalidasBody");
 
+  guardarCacheImagenSalidas(blob);
   if (previewSalidasUrl) URL.revokeObjectURL(previewSalidasUrl);
   previewSalidasUrl = URL.createObjectURL(blob);
 
