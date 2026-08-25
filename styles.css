@@ -136,8 +136,8 @@ button {
 
 .tabs button {
   flex: 1;
-  padding: 14px 8px;
-  font-size: 15px;
+  padding: 12px 6px;
+  font-size: 14px;
 }
 
 .oculto {
@@ -615,4 +615,98 @@ button {
   #vistaSalidas.card {
     max-width: none;
   }
+}
+
+/* ===== Campañas ===== */
+.subtitulo-seccion {
+  margin-top: 28px;
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.campo-grupo {
+  margin-top: 14px;
+}
+
+.campo-grupo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 10px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip-selected {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #eee;
+  font-size: 14px;
+}
+
+.chip-x {
+  width: auto;
+  margin: 0;
+  padding: 0 4px;
+  background: transparent;
+  color: #222;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.campana-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  background: #fafafa;
+}
+
+.campana-item-acciones {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.leyenda-campana {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 10px 0 4px;
+  font-size: 14px;
+}
+
+.leyenda-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+.swatch.verde { background: #28a745; }
+.swatch.amarillo { background: #ffc107; }
+.swatch.rojo { background: #dc3545; }
+
+#filtroCampanaReporte,
+#filtroCampanaModalTerr {
+  margin-bottom: 8px;
 }

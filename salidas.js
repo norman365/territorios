@@ -520,24 +520,80 @@ let modalTerritorioTarget = null;
 let modalTerritorioOnConfirm = null;
 let modalTerritorioSeleccion = new Set();
 let cacheReporteTerritorios = null;
+let cacheRegistrosCampanaModal = null;
+let modalTerritorioOpciones = {
+  titulo: "Seleccionar territorios",
+  modoVista: "tradicional",
+  campanaId: ""
+};
 
 async function abrirModalTerritorios(inputEl, onConfirm) {
+  await abrirModalTerritoriosGenerico({
+    inputEl,
+    onConfirm,
+    seleccionInicial: parseTerritoriosTexto(inputEl.value),
+    titulo: "Seleccionar territorios",
+    modoVista: "auto"
+  });
+}
+
+/**
+ * Modal reutilizable para elegir territorios (salidas o campañas).
+ * modoVista: "tradicional" | "campana" | "auto"
+ */
+async function abrirModalTerritoriosGenerico({
+  inputEl = null,
+  onConfirm = null,
+  seleccionInicial = [],
+  titulo = "Seleccionar territorios",
+  modoVista = "tradicional",
+  campanaId = ""
+} = {}) {
   modalTerritorioTarget = inputEl;
   modalTerritorioOnConfirm = onConfirm;
-  modalTerritorioSeleccion = new Set(parseTerritoriosTexto(inputEl.value));
+  modalTerritorioSeleccion = new Set(
+    [...seleccionInicial].map(Number).filter((n) => n >= 1 && n <= 110)
+  );
+  modalTerritorioOpciones = { titulo, modoVista, campanaId };
 
   const modal = document.getElementById("modalTerritorios");
   const grid = document.getElementById("modalTerritoriosGrid");
+  const tituloEl = document.getElementById("modalTerritoriosTitulo");
+  if (tituloEl) tituloEl.textContent = titulo;
+
   grid.innerHTML = "<p class='ayuda'>Cargando territorios...</p>";
   modal.classList.remove("oculto");
 
   try {
+    await rellenarSelectoresCampana();
+    const filtro = document.getElementById("filtroCampanaModalTerr");
+    if (filtro) {
+      if (modoVista === "tradicional") {
+        filtro.value = "";
+        filtro.disabled = true;
+      } else if (modoVista === "campana" && campanaId) {
+        filtro.value = String(campanaId);
+        filtro.disabled = false;
+      } else {
+        filtro.disabled = false;
+        // auto: respeta selección previa del usuario si existe
+      }
+      filtro.onchange = () => renderModalTerritoriosGrid();
+    }
+
     const { data, error } = await db
       .from("vw_territorios_reporte")
       .select("*")
       .order("numero_territorio");
     if (error) throw new Error(error.message);
     cacheReporteTerritorios = data || [];
+
+    const regs = await db
+      .from("territorios_registro")
+      .select("id,numero_territorio,fecha_inicio,fecha_fin");
+    if (regs.error) throw new Error(regs.error.message);
+    cacheRegistrosCampanaModal = regs.data || [];
+
     renderModalTerritoriosGrid();
   } catch (err) {
     grid.innerHTML = "";
@@ -546,21 +602,50 @@ async function abrirModalTerritorios(inputEl, onConfirm) {
   }
 }
 
-function renderModalTerritoriosGrid() {
+async function renderModalTerritoriosGrid() {
   const grid = document.getElementById("modalTerritoriosGrid");
   grid.innerHTML = "";
 
-  cacheReporteTerritorios.forEach((t) => {
-    const n = Number(t.numero_territorio);
-    const info = infoTileTerritorio(t);
+  const filtro = document.getElementById("filtroCampanaModalTerr");
+  const campanaId = filtro ? filtro.value : "";
+
+  let items = [];
+
+  if (campanaId && typeof listarCampanas === "function") {
+    try {
+      const campanas = await listarCampanas();
+      const campana = campanas.find((c) => String(c.id) === String(campanaId));
+      if (campana) {
+        const enSalidas =
+          typeof territoriosSalidasSemanaActual === "function"
+            ? await territoriosSalidasSemanaActual()
+            : new Set();
+        items = campana.territorios.map((n) => ({
+          numero: n,
+          info: infoTileCampana(n, cacheRegistrosCampanaModal || [], campana, enSalidas)
+        }));
+      }
+    } catch (_) {
+      items = [];
+    }
+  }
+
+  if (!items.length) {
+    items = (cacheReporteTerritorios || []).map((t) => ({
+      numero: Number(t.numero_territorio),
+      info: infoTileTerritorio(t)
+    }));
+  }
+
+  items.forEach(({ numero, info }) => {
     const div = document.createElement("div");
     div.className = `territorio ${info.clase}`;
-    if (modalTerritorioSeleccion.has(n)) div.classList.add("tile-selected");
+    if (modalTerritorioSeleccion.has(numero)) div.classList.add("tile-selected");
     div.innerHTML = info.texto;
     div.onclick = () => {
-      if (modalTerritorioSeleccion.has(n)) modalTerritorioSeleccion.delete(n);
-      else modalTerritorioSeleccion.add(n);
-      div.classList.toggle("tile-selected", modalTerritorioSeleccion.has(n));
+      if (modalTerritorioSeleccion.has(numero)) modalTerritorioSeleccion.delete(numero);
+      else modalTerritorioSeleccion.add(numero);
+      div.classList.toggle("tile-selected", modalTerritorioSeleccion.has(numero));
     };
     grid.appendChild(div);
   });
@@ -570,13 +655,16 @@ function cerrarModalTerritorios() {
   document.getElementById("modalTerritorios").classList.add("oculto");
   modalTerritorioTarget = null;
   modalTerritorioOnConfirm = null;
+  const filtro = document.getElementById("filtroCampanaModalTerr");
+  if (filtro) filtro.disabled = false;
 }
 
 function confirmarModalTerritorios() {
-  if (!modalTerritorioTarget) return;
   const lista = [...modalTerritorioSeleccion].sort((a, b) => a - b);
-  modalTerritorioTarget.value = textoTerritorios(lista);
-  if (typeof modalTerritorioOnConfirm === "function") modalTerritorioOnConfirm();
+  if (modalTerritorioTarget) {
+    modalTerritorioTarget.value = textoTerritorios(lista);
+  }
+  if (typeof modalTerritorioOnConfirm === "function") modalTerritorioOnConfirm(lista);
   cerrarModalTerritorios();
 }
 

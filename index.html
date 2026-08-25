@@ -14,6 +14,7 @@
   <button type="button" onclick="mostrarVista('carga')">Cargar</button>
   <button type="button" onclick="mostrarVista('reporte')">Reporte</button>
   <button type="button" onclick="mostrarVista('salidas')">Salidas</button>
+  <button type="button" onclick="mostrarVista('campanas')">Campañas</button>
 </nav>
 
 <section id="vistaCarga" class="card">
@@ -38,6 +39,12 @@
 
 <section id="vistaReporte" class="card oculto">
   <h2>Reporte</h2>
+
+  <label for="filtroCampanaReporte">Campaña</label>
+  <select id="filtroCampanaReporte" onchange="cargarReporteConCampana()">
+    <option value="">Sin campaña (vista normal)</option>
+  </select>
+  <div id="leyendaCampanaReporte" class="leyenda-campana oculto"></div>
 
   <button type="button" class="btn-secundario btn-acciones" onclick="mostrarVista('carpeta')">
     Generar Registros para la Carpeta
@@ -137,6 +144,43 @@
   </div>
 </section>
 
+<section id="vistaCampanas" class="card oculto">
+  <h2>Campañas</h2>
+  <p class="ayuda">
+    Una campaña agrupa territorios a completar entre dos fechas.
+    Podés tener más de una campaña en el mismo período.
+  </p>
+
+  <input type="hidden" id="campanaId" value="">
+
+  <label for="campanaNombre">Nombre (opcional)</label>
+  <input id="campanaNombre" type="text" placeholder="Ej: Campaña Memorial 2026">
+
+  <label for="campanaInicio">Fecha inicio</label>
+  <input id="campanaInicio" type="date">
+
+  <label for="campanaFin">Fecha fin</label>
+  <input id="campanaFin" type="date">
+
+  <div class="campo-grupo">
+    <div class="campo-grupo-header">
+      <span>Territorios participantes (<span id="campanaTerrCount">0</span>)</span>
+      <button type="button" class="btn-link" onclick="abrirModalTerritoriosCampana()">Elegir</button>
+    </div>
+    <div id="campanaTerritoriosChips" class="chips"></div>
+  </div>
+
+  <div class="acciones-fila acciones-editor">
+    <button type="button" id="btnGuardarCampana" onclick="guardarCampana()">Crear campaña</button>
+    <button type="button" id="btnCancelarEdicionCampana" class="btn-secundario oculto" onclick="resetFormCampana()">
+      Cancelar edición
+    </button>
+  </div>
+
+  <h3 class="subtitulo-seccion">Campañas guardadas</h3>
+  <div id="listaCampanas"></div>
+</section>
+
 <div id="panelDetalle" class="panel-finalizar oculto">
   <h3 id="tituloDetalle">Detalle territorio</h3>
 
@@ -150,11 +194,15 @@
 <div id="modalTerritorios" class="modal-overlay oculto" role="dialog" aria-modal="true">
   <div class="modal-panel">
     <div class="modal-header">
-      <h3>Seleccionar territorios</h3>
+      <h3 id="modalTerritoriosTitulo">Seleccionar territorios</h3>
       <button type="button" class="btn-mini btn-peligro" onclick="cerrarModalTerritorios()">×</button>
     </div>
+    <label for="filtroCampanaModalTerr">Vista</label>
+    <select id="filtroCampanaModalTerr">
+      <option value="">Vista tradicional (días)</option>
+    </select>
     <p class="ayuda ayuda-compacta">
-      Tocá uno o varios. Mismos colores que el reporte.
+      Tocá uno o varios. Podés ver por días o según una campaña.
     </p>
     <div id="modalTerritoriosGrid" class="grid modal-terr-grid"></div>
     <div class="modal-footer">
@@ -193,6 +241,7 @@
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="s13-pdf.js"></script>
 <script src="salidas.js"></script>
+<script src="campanas.js"></script>
 <script src="app.js"></script>
 
 </body>

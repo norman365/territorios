@@ -44,41 +44,8 @@ async function guardar() {
 }
 
 async function cargarReporte() {
-  const { data, error } = await db
-    .from("vw_territorios_reporte")
-    .select("*")
-    .order("numero_territorio");
-
-  if (error) {
-    mostrarToast("Error al cargar reporte: " + error.message, "error");
-    return;
-  }
-
-  const contenedor = document.getElementById("reporte");
-  contenedor.innerHTML = "";
-
-  data.forEach(t => {
-    const div = document.createElement("div");
-    const info = infoTileTerritorio(t);
-    div.classList.add("territorio", info.clase);
-    div.innerHTML = info.texto;
-
-    if (t.estado === "ASIGNADO") {
-      div.onclick = () => {
-        abrirPanelFinalizar(
-          t.id_registro_asignado,
-          t.numero_territorio,
-          t.fecha_asignacion
-        );
-      };
-    } else {
-      div.onclick = () => {
-        abrirDetalleTerritorio(t.numero_territorio);
-      };
-    }
-
-    contenedor.appendChild(div);
-  });
+  await rellenarSelectoresCampana();
+  await cargarReporteConCampana();
 }
 
 function infoTileTerritorio(t) {
@@ -120,6 +87,7 @@ function mostrarVista(vista) {
   document.getElementById("vistaReporte").classList.add("oculto");
   document.getElementById("vistaCarpeta").classList.add("oculto");
   document.getElementById("vistaSalidas").classList.add("oculto");
+  document.getElementById("vistaCampanas").classList.add("oculto");
   document.getElementById("panelDetalle").classList.add("oculto");
 
   if (vista === "carga") {
@@ -141,6 +109,11 @@ function mostrarVista(vista) {
   if (vista === "salidas") {
     document.getElementById("vistaSalidas").classList.remove("oculto");
     prepararVistaSalidas();
+  }
+
+  if (vista === "campanas") {
+    document.getElementById("vistaCampanas").classList.remove("oculto");
+    prepararVistaCampanas();
   }
 }
 
