@@ -617,9 +617,11 @@ async function renderModalTerritoriosGrid() {
       const campana = campanas.find((c) => String(c.id) === String(campanaId));
       if (campana) {
         const enSalidas =
-          typeof territoriosSalidasSemanaActual === "function"
-            ? await territoriosSalidasSemanaActual()
-            : new Set();
+          typeof territoriosUltimaSemanaSalidas === "function"
+            ? (await territoriosUltimaSemanaSalidas()).set
+            : typeof territoriosSalidasSemanaActual === "function"
+              ? await territoriosSalidasSemanaActual()
+              : new Set();
         items = campana.territorios.map((n) => ({
           numero: n,
           info: infoTileCampana(n, cacheRegistrosCampanaModal || [], campana, enSalidas)

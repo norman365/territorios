@@ -38,14 +38,14 @@ function invalidarCacheCampanas() {
 /**
  * Estado de un territorio dentro de una campaña:
  * - verde: completado (fecha_fin) dentro del rango de la campaña
- * - amarillo: aparece en el programa de salidas de esta semana
+ * - amarillo: en la última semana de salidas guardada, o asignado en curso
  * - rojo: pendiente
  */
-function infoTileCampana(numero, registros, campana, territoriosEnSalidasSemana) {
-  const delTerr = (registros || []).filter(
-    (r) => Number(r.numero_territorio) === Number(numero)
-  );
+function infoTileCampana(numero, registros, campana, territoriosEnSalidas) {
   const n = Number(numero);
+  const delTerr = (registros || []).filter(
+    (r) => Number(r.numero_territorio) === n
+  );
 
   const completado = delTerr.some(
     (r) =>
@@ -58,28 +58,35 @@ function infoTileCampana(numero, registros, campana, territoriosEnSalidasSemana)
     return { clase: "verde", texto: `T${n}<br>Hecho` };
   }
 
-  if (territoriosEnSalidasSemana && territoriosEnSalidasSemana.has(n)) {
+  const enSalidas = territoriosEnSalidas && territoriosEnSalidas.has(n);
+  if (enSalidas) {
     return { clase: "amarillo", texto: `T${n}<br>En salidas` };
+  }
+
+  const asignadoAbierto = delTerr.some(
+    (r) => r.fecha_fin == null || r.fecha_fin === ""
+  );
+  if (asignadoAbierto) {
+    return { clase: "amarillo", texto: `T${n}<br>Asignado` };
   }
 
   return { clase: "rojo", texto: `T${n}<br>Pendiente` };
 }
 
-async function territoriosSalidasSemanaActual() {
-  const domingo = typeof domingoDe === "function"
-    ? domingoDe(new Date())
-    : null;
-
-  if (!domingo) return new Set();
-
+/**
+ * Territorios de la última semana de salidas guardada (puede ser futura).
+ * Devuelve { set, domingo } para leyenda y coloreado.
+ */
+async function territoriosUltimaSemanaSalidas() {
   const { data: programa, error } = await db
     .from("salidas_programa")
-    .select("id")
-    .eq("domingo", domingo)
+    .select("id,domingo")
+    .order("domingo", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  if (!programa) return new Set();
+  if (!programa) return { set: new Set(), domingo: null };
 
   const { data: items, error: itemsErr } = await db
     .from("salidas_item")
@@ -92,6 +99,13 @@ async function territoriosSalidasSemanaActual() {
   (items || []).forEach((it) => {
     (it.territorios || []).forEach((t) => set.add(Number(t)));
   });
+
+  return { set, domingo: programa.domingo };
+}
+
+/** @deprecated usar territoriosUltimaSemanaSalidas */
+async function territoriosSalidasSemanaActual() {
+  const { set } = await territoriosUltimaSemanaSalidas();
   return set;
 }
 
@@ -370,7 +384,8 @@ async function cargarReporteConCampana() {
     }
 
     const registros = await cargarRegistrosParaCampana();
-    const enSalidas = await territoriosSalidasSemanaActual();
+    const ultimaSalidas = await territoriosUltimaSemanaSalidas();
+    const enSalidas = ultimaSalidas.set;
     const reporteBase = await db
       .from("vw_territorios_reporte")
       .select("*")
@@ -385,12 +400,44 @@ async function cargarReporteConCampana() {
     const contenedor = document.getElementById("reporte");
     contenedor.innerHTML = "";
 
+    let completos = 0;
+    campana.territorios.forEach((n) => {
+      const info = infoTileCampana(n, registros, campana, enSalidas);
+      if (info.clase === "verde") completos += 1;
+    });
+    const total = campana.territorios.length;
+    const faltantes = Math.max(total - completos, 0);
+    const avance = total > 0 ? Math.round((completos / total) * 100) : 0;
+
+    const indicadores = document.getElementById("indicadoresCampanaReporte");
+    if (indicadores) {
+      indicadores.classList.remove("oculto");
+      indicadores.innerHTML = `
+        <div class="indicador-card">
+          <div class="indicador-valor">${completos}</div>
+          <div class="indicador-label">Completos</div>
+        </div>
+        <div class="indicador-card">
+          <div class="indicador-valor">${faltantes}</div>
+          <div class="indicador-label">Faltantes</div>
+        </div>
+        <div class="indicador-card indicador-avance">
+          <div class="indicador-valor">${avance}%</div>
+          <div class="indicador-label">Avance</div>
+          <div class="indicador-barra"><span style="width:${avance}%"></span></div>
+        </div>
+      `;
+    }
+
     const leyenda = document.getElementById("leyendaCampanaReporte");
     if (leyenda) {
       leyenda.classList.remove("oculto");
+      const semanaTxt = ultimaSalidas.domingo
+        ? ` (semana ${formatearFecha(ultimaSalidas.domingo)})`
+        : " (sin semana guardada)";
       leyenda.innerHTML = `
         <span class="leyenda-item"><i class="swatch verde"></i> Completado en campaña</span>
-        <span class="leyenda-item"><i class="swatch amarillo"></i> En salidas de esta semana</span>
+        <span class="leyenda-item"><i class="swatch amarillo"></i> En salidas${semanaTxt}</span>
         <span class="leyenda-item"><i class="swatch rojo"></i> Pendiente</span>
       `;
     }
@@ -426,6 +473,12 @@ async function cargarReporteNormal() {
   if (leyenda) {
     leyenda.classList.add("oculto");
     leyenda.innerHTML = "";
+  }
+
+  const indicadores = document.getElementById("indicadoresCampanaReporte");
+  if (indicadores) {
+    indicadores.classList.add("oculto");
+    indicadores.innerHTML = "";
   }
 
   const { data, error } = await db

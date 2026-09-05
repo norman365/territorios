@@ -689,6 +689,58 @@ button {
   font-size: 14px;
 }
 
+.indicadores-campana {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 12px 0 8px;
+}
+
+.indicador-card {
+  background: #f4f6f8;
+  border-radius: 10px;
+  padding: 12px 10px;
+  text-align: center;
+}
+
+.indicador-valor {
+  font-size: 28px;
+  font-weight: bold;
+  line-height: 1.1;
+  color: #222;
+}
+
+.indicador-label {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #555;
+}
+
+.indicador-barra {
+  margin-top: 8px;
+  height: 8px;
+  background: #dde2e8;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.indicador-barra span {
+  display: block;
+  height: 100%;
+  background: #28a745;
+  border-radius: 999px;
+}
+
+@media (max-width: 600px) {
+  .indicadores-campana {
+    grid-template-columns: 1fr;
+  }
+
+  .indicador-valor {
+    font-size: 24px;
+  }
+}
+
 .leyenda-item {
   display: inline-flex;
   align-items: center;
