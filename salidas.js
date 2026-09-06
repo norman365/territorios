@@ -86,7 +86,8 @@ function salidaVacia(dia, horario = "10:00") {
     punto_encuentro: "",
     grupos: [],
     territorios: [],
-    manzanas: []
+    manzanas: [],
+    color_fuente: "#000000"
   };
 }
 
@@ -222,7 +223,8 @@ function mapProgramaFromDb(row) {
     punto_encuentro: it.punto_encuentro || "",
     grupos: it.grupos || [],
     territorios: it.territorios || [],
-    manzanas: it.manzanas || []
+    manzanas: it.manzanas || [],
+    color_fuente: normalizarColorFuente(it.color_fuente)
   }));
 
   return {
@@ -233,6 +235,21 @@ function mapProgramaFromDb(row) {
     recordatorio_grupo: row.recordatorio_grupo || 1,
     items: ordenarItems(items)
   };
+}
+
+const COLORES_FUENTE = [
+  { id: "negro", label: "Negro", value: "#000000" },
+  { id: "rojo", label: "Rojo", value: "#dc3545" },
+  { id: "verde", label: "Verde", value: "#28a745" },
+  { id: "azul", label: "Azul", value: "#007bff" },
+  { id: "naranja", label: "Naranja", value: "#fd7e14" },
+  { id: "rosado", label: "Rosado", value: "#e83e8c" }
+];
+
+function normalizarColorFuente(color) {
+  const c = String(color || "#000000").trim().toLowerCase();
+  const match = COLORES_FUENTE.find((x) => x.value === c);
+  return match ? match.value : "#000000";
 }
 
 function leerRecordatoriosDelForm() {
@@ -258,7 +275,19 @@ function sincronizarItemsDesdeDom() {
     if (territorios.length === 1) {
       manzanas = parseManzanasTexto(row.querySelector(".salida-manzanas").value);
     }
-    items.push({ uid, dia, horario, conductor, punto_encuentro: punto, grupos, territorios, manzanas });
+    const colorInput = row.querySelector(".salida-color");
+    const color_fuente = normalizarColorFuente(colorInput ? colorInput.value : "#000000");
+    items.push({
+      uid,
+      dia,
+      horario,
+      conductor,
+      punto_encuentro: punto,
+      grupos,
+      territorios,
+      manzanas,
+      color_fuente
+    });
   });
 
   programaActual.items = items;
@@ -346,7 +375,8 @@ async function guardarProgramaSemana() {
         punto_encuentro: it.punto_encuentro,
         grupos: it.grupos,
         territorios: it.territorios,
-        manzanas: it.manzanas
+        manzanas: it.manzanas,
+        color_fuente: normalizarColorFuente(it.color_fuente)
       }));
       const { error: insErr } = await db.from("salidas_item").insert(rows);
       if (insErr) throw new Error(insErr.message);
@@ -431,6 +461,7 @@ function crearFilaSalida(item, optsDia, optsHorario) {
   const tr = document.createElement("tr");
   tr.className = "salida-row";
   tr.dataset.uid = item.uid;
+  const color = normalizarColorFuente(item.color_fuente);
 
   const gruposHtml = GRUPOS.map(
     (g) => `
@@ -472,13 +503,28 @@ function crearFilaSalida(item, optsDia, optsHorario) {
         textoManzanas(item.manzanas)
       )}" placeholder="A-B-C" ${item.territorios.length === 1 ? "" : "disabled"}>
     </td>
-    <td>
-      <button type="button" class="btn-mini btn-peligro salida-eliminar" title="Eliminar">×</button>
+    <td class="col-acciones-fila">
+      <div class="salida-acciones">
+        <button type="button" class="btn-mini btn-color salida-color-btn" title="Color de fuente">
+          <span class="salida-color-swatch" style="background:${color}"></span>
+        </button>
+        <input type="hidden" class="salida-color" value="${color}">
+        <div class="salida-color-palette oculto" role="listbox" aria-label="Elegir color">
+          ${COLORES_FUENTE.map(
+            (c) => `
+            <button type="button" class="salida-color-option ${
+              c.value === color ? "activa" : ""
+            }" data-color="${c.value}" title="${c.label}" style="background:${c.value}"></button>`
+          ).join("")}
+        </div>
+        <button type="button" class="btn-mini btn-peligro salida-eliminar" title="Eliminar">×</button>
+      </div>
     </td>
   `;
 
   tr.querySelector(".salida-dia").value = String(item.dia);
   tr.querySelector(".salida-horario").value = item.horario || "10:00";
+  aplicarColorFilaSalida(tr, color);
 
   const syncManzanas = () => {
     const terr = parseTerritoriosTexto(tr.querySelector(".salida-territorios").value);
@@ -490,6 +536,33 @@ function crearFilaSalida(item, optsDia, optsHorario) {
       input.value = "";
     }
   };
+
+  const colorHidden = tr.querySelector(".salida-color");
+  const swatch = tr.querySelector(".salida-color-swatch");
+  const palette = tr.querySelector(".salida-color-palette");
+  const colorBtn = tr.querySelector(".salida-color-btn");
+
+  colorBtn.onclick = (e) => {
+    e.stopPropagation();
+    document.querySelectorAll(".salida-color-palette").forEach((p) => {
+      if (p !== palette) p.classList.add("oculto");
+    });
+    palette.classList.toggle("oculto");
+  };
+
+  palette.querySelectorAll(".salida-color-option").forEach((opt) => {
+    opt.onclick = (e) => {
+      e.stopPropagation();
+      const nuevo = normalizarColorFuente(opt.dataset.color);
+      colorHidden.value = nuevo;
+      swatch.style.background = nuevo;
+      palette.querySelectorAll(".salida-color-option").forEach((o) => {
+        o.classList.toggle("activa", o.dataset.color === nuevo);
+      });
+      aplicarColorFilaSalida(tr, nuevo);
+      palette.classList.add("oculto");
+    };
+  });
 
   tr.querySelector(".salida-territorios").addEventListener("click", () => {
     abrirModalTerritorios(tr.querySelector(".salida-territorios"), syncManzanas);
@@ -515,6 +588,21 @@ function crearFilaSalida(item, optsDia, optsHorario) {
   syncManzanas();
   return tr;
 }
+
+function aplicarColorFilaSalida(tr, color) {
+  const c = normalizarColorFuente(color);
+  tr.style.color = c;
+  tr.querySelectorAll("input, select, .chip-inline, .btn-link").forEach((el) => {
+    el.style.color = c;
+  });
+}
+
+document.addEventListener("click", (e) => {
+  if (e.target.closest(".salida-acciones")) return;
+  document.querySelectorAll(".salida-color-palette").forEach((p) => {
+    p.classList.add("oculto");
+  });
+});
 
 let modalTerritorioTarget = null;
 let modalTerritorioOnConfirm = null;
@@ -717,7 +805,8 @@ function filasParaImagen() {
         conductor: it.conductor,
         punto_encuentro: it.punto_encuentro,
         gruposTxt: formatearGrupos(it.grupos),
-        terrTxt: formatearTerritorios(it.territorios, it.manzanas)
+        terrTxt: formatearTerritorios(it.territorios, it.manzanas),
+        color_fuente: normalizarColorFuente(it.color_fuente)
       }));
 
     if (REUNIONES[dia]) {
@@ -784,15 +873,16 @@ function construirHtmlImagen() {
       const terr =
         f.terrTxt ||
         (f.punto_encuentro.toLowerCase().includes("zoom") ? "-" : "");
+      const colorStyle = `style="color:${normalizarColorFuente(f.color_fuente)}"`;
 
       body += `
         <tr>
           ${diaCell}
-          <td>${f.horario}</td>
-          <td>${escapeHtml(f.conductor)}</td>
-          <td>${escapeHtml(f.punto_encuentro)}</td>
-          <td>${escapeHtml(f.gruposTxt)}</td>
-          <td>${escapeHtml(terr)}</td>
+          <td ${colorStyle}>${f.horario}</td>
+          <td ${colorStyle}>${escapeHtml(f.conductor)}</td>
+          <td ${colorStyle}>${escapeHtml(f.punto_encuentro)}</td>
+          <td ${colorStyle}>${escapeHtml(f.gruposTxt)}</td>
+          <td ${colorStyle}>${escapeHtml(terr)}</td>
         </tr>`;
     });
   });

@@ -21,6 +21,7 @@ create table if not exists salidas_item (
   grupos integer[] not null default '{}',
   territorios integer[] not null default '{}',
   manzanas text[] not null default '{}',
+  color_fuente text not null default '#000000',
   creado_en timestamptz not null default now()
 );
 
